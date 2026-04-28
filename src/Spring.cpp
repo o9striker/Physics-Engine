@@ -1,6 +1,6 @@
 #include "Spring.h"
 
-Spring::Spring(int pA, int pB, float length, float k, float d) {
+Spring::Spring(size_t pA, size_t pB, float length, float k, float d) {
     particleA = pA;
     particleB = pB;
     restLength = length;
