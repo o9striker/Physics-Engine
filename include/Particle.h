@@ -10,6 +10,7 @@ public:
     float mass;
     float radius;
     uint32_t color; // Hex color: RRGGBBAA
+    bool isStatic = false; // If true, the particle will not be updated by physics
 
     // Constructor to set up a new particle
     Particle(float x, float y, float m, float r, uint32_t c);

@@ -12,6 +12,8 @@ Particle::Particle(float x, float y, float m, float r, uint32_t c) {
 }
 
 void Particle::Update(float deltaTime, int screenWidth, int screenHeight) {
+    if (isStatic) return;
+
     // 1. Add gravity to the velocity's Y-component
     velocity.y += GRAVITY * deltaTime;
 
@@ -53,9 +55,15 @@ void Particle::ResolveCollision(Particle& other) {
     float overlap = sumRadii - dist;
     glm::vec2 normal = glm::normalize(position - other.position);
 
-    // Push apart by half the overlap
-    position += normal * (overlap * 0.5f);
-    other.position -= normal * (overlap * 0.5f);
+    // Push apart based on static flags
+    if (!isStatic && !other.isStatic) {
+        position += normal * (overlap * 0.5f);
+        other.position -= normal * (overlap * 0.5f);
+    } else if (!isStatic) {
+        position += normal * overlap;
+    } else if (!other.isStatic) {
+        other.position -= normal * overlap;
+    }
 
     // Step 3: Velocity Resolution (The Magic Bounce)
     glm::vec2 v_rel = velocity - other.velocity;
@@ -68,12 +76,17 @@ void Particle::ResolveCollision(Particle& other) {
 
     // Calculate Impulse (j)
     float e = 0.8f; // Restitution
+    
+    // Treat static objects as having infinite mass (0 inverse mass)
+    float invMass1 = isStatic ? 0.0f : (1.0f / mass);
+    float invMass2 = other.isStatic ? 0.0f : (1.0f / other.mass);
+    
     float j = -(1.0f + e) * velAlongNormal;
-    j /= (1.0f / mass) + (1.0f / other.mass);
+    j /= (invMass1 + invMass2);
 
     // Apply impulse to velocities
     glm::vec2 impulse = j * normal;
-    velocity += impulse / mass;
-    other.velocity -= impulse / other.mass;
+    if (!isStatic) velocity += impulse * invMass1;
+    if (!other.isStatic) other.velocity -= impulse * invMass2;
 }
 

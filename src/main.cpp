@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "Particle.h"
+#include "Spring.h"
 #include <vector>
 #include <cstdint>
 #include <iostream>
@@ -23,6 +24,13 @@ int main() {
 
     // The dynamic list of particles
     std::vector<Particle> particles;
+    std::vector<Spring> springs;
+
+    // The Anchor Setup (The Sandbox)
+    particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 0: Anchor
+    particles[0].isStatic = true;
+    particles.push_back(Particle(screenWidth / 2.0f + 100.0f, 300.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 1: Bob
+    springs.push_back({0, 1, 200.0f, 5.0f});
 
     // 2. The Game Loop
     while (!WindowShouldClose()) { 
@@ -64,6 +72,13 @@ int main() {
         // Draw every particle
         for (const auto& p : particles) {
             DrawCircle((int)p.position.x, (int)p.position.y, p.radius, GetRaylibColor(p.color));
+        }
+
+        // Draw every spring
+        for (const auto& spring : springs) {
+            Vector2 p1 = { particles[spring.particleA].position.x, particles[spring.particleA].position.y };
+            Vector2 p2 = { particles[spring.particleB].position.x, particles[spring.particleB].position.y };
+            DrawLineEx(p1, p2, 3.0f, GREEN); // Neon green line
         }
 
         // Debug info on screen
