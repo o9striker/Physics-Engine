@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "Particle.h"
+#include <iostream>
 
 int main() {
     // 1. Initialization
@@ -9,8 +10,9 @@ int main() {
     SetTargetFPS(60);
 
     // Spawn the Entity
-    Particle p(screenWidth / 2.0f, 100.0f, 1.0f);
-    const float particleRadius = 15.0f;
+    Particle p(screenWidth / 2.0f, 100.0f, 15.0f, 1.0f);
+
+    int frameCount = 0;
 
     // 2. The Game Loop
     while (!WindowShouldClose()) { 
@@ -18,13 +20,7 @@ int main() {
         float deltaTime = GetFrameTime();
 
         // Update the Math
-        p.Update(deltaTime);
-
-        // Floor Collision
-        if (p.position.y + particleRadius >= screenHeight) {
-            p.position.y = screenHeight - particleRadius;
-            p.velocity.y *= -0.8f; // Bounce with restitution
-        }
+        p.Update(deltaTime, screenHeight);
 
         // 3. Drawing
         BeginDrawing();
@@ -32,11 +28,19 @@ int main() {
         // A nice dark-mode/cyberpunk background color
         ClearBackground({ 15, 15, 18, 255 }); 
 
-
         // Draw the Entity
-        DrawCircle(p.position.x, p.position.y, particleRadius, MAGENTA);
+        DrawCircle((int)p.position.x, (int)p.position.y, p.radius, MAGENTA);
+
+        // Debug info on screen
+        DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, RAYWHITE);
+        DrawText(TextFormat("Pos Y: %.2f", p.position.y), 10, 40, 20, RAYWHITE);
 
         EndDrawing();
+
+        frameCount++;
+        if (frameCount < 10) {
+            std::cout << "Frame " << frameCount << " rendered at Pos Y: " << p.position.y << std::endl;
+        }
     }
 
     // 4. De-Initialization
