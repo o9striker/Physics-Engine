@@ -2,11 +2,13 @@
 
 const float GRAVITY = 981.0f; // Pixels per second squared
 
-Particle::Particle(float x, float y, float m) {
+Particle::Particle(float x, float y, float m, float r, uint32_t c) {
     position = glm::vec2(x, y);
     velocity = glm::vec2(0.0f, 0.0f);
     acceleration = glm::vec2(0.0f, 0.0f);
     mass = m;
+    radius = r;
+    color = c;
 }
 
 void Particle::Update(float deltaTime) {

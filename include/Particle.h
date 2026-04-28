@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <cstdint>
 
 class Particle {
 public:
@@ -7,9 +8,11 @@ public:
     glm::vec2 velocity;
     glm::vec2 acceleration;
     float mass;
+    float radius;
+    uint32_t color; // Hex color: RRGGBBAA
 
     // Constructor to set up a new particle
-    Particle(float x, float y, float m);
+    Particle(float x, float y, float m, float r, uint32_t c);
 
     // The function that will eventually move the particle
     void Update(float deltaTime);
