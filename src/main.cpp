@@ -45,7 +45,7 @@ int main() {
 
         // Update every particle
         for (auto& p : particles) {
-            p.Update(deltaTime, screenHeight);
+            p.Update(deltaTime, screenWidth, screenHeight);
         }
 
         // 4. Drawing

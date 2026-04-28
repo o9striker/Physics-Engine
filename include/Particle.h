@@ -14,6 +14,9 @@ public:
     // Constructor to set up a new particle
     Particle(float x, float y, float m, float r, uint32_t c);
 
-    // The function that will move the particle and handle floor collision
-    void Update(float deltaTime, int screenHeight);
+    // The function that will move the particle and handle bounds collision
+    void Update(float deltaTime, int screenWidth, int screenHeight);
+
+    // Resolves a physics collision with another particle
+    void ResolveCollision(Particle& other);
 };
