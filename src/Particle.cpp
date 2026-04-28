@@ -42,7 +42,11 @@ void Particle::Update(float deltaTime, int screenWidth, int screenHeight) {
     // Floor Collision
     if (position.y + radius >= screenHeight) {
         position.y = (float)screenHeight - radius;
-        velocity.y *= -0.8f; // Bounce with restitution
+        if (velocity.y < 30.0f) {
+            velocity.y = 0.0f; // Put to sleep vertically
+        } else {
+            velocity.y *= -0.8f; // Bounce with restitution
+        }
     }
 
     // Left/Right Wall Collision
@@ -95,6 +99,9 @@ void Particle::ResolveCollision(Particle& other) {
 
     // Calculate Impulse (j)
     float e = 0.8f; // Restitution
+    if (velAlongNormal > -20.0f) {
+        e = 0.0f; // Kill the bounce if they are barely colliding
+    }
     
     // Treat static objects as having infinite mass (0 inverse mass)
     float invMass1 = isStatic ? 0.0f : (1.0f / mass);
