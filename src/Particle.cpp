@@ -76,3 +76,4 @@ void Particle::ResolveCollision(Particle& other) {
     velocity += impulse / mass;
     other.velocity -= impulse / other.mass;
 }
+
