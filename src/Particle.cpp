@@ -24,3 +24,7 @@ void Particle::Update(float deltaTime, int screenHeight) {
         velocity.y *= -0.8f; // Bounce with restitution
     }
 }
+
+void Particle::ResolveCollision(Particle& other) {
+    // Teammate will implement physics here
+}

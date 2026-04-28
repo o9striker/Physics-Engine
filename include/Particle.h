@@ -16,4 +16,7 @@ public:
 
     // The function that will move the particle and handle floor collision
     void Update(float deltaTime, int screenHeight);
+
+    // Resolves collision with another particle
+    void ResolveCollision(Particle& other);
 };

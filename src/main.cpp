@@ -43,9 +43,16 @@ int main() {
         // The Tick
         float deltaTime = GetFrameTime();
 
-        // Update every particle
+        // Update positions first
         for (auto& p : particles) {
             p.Update(deltaTime, screenHeight);
+        }
+
+        // Then check collisions
+        for (size_t i = 0; i < particles.size(); i++) {
+            for (size_t j = i + 1; j < particles.size(); j++) {
+                particles[i].ResolveCollision(particles[j]);
+            }
         }
 
         // 4. Drawing
