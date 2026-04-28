@@ -6,17 +6,31 @@ Particle::Particle(float x, float y, float m, float r, uint32_t c) {
     position = glm::vec2(x, y);
     velocity = glm::vec2(0.0f, 0.0f);
     acceleration = glm::vec2(0.0f, 0.0f);
+    forceAccumulator = glm::vec2(0.0f, 0.0f);
     mass = m;
     radius = r;
     color = c;
 }
 
-void Particle::Update(float deltaTime, int screenWidth, int screenHeight) {
-    // 1. Add gravity to the velocity's Y-component
-    velocity.y += GRAVITY * deltaTime;
+void Particle::ApplyForce(glm::vec2 force) {
+    forceAccumulator += force;
+}
 
-    // 2. Update the particle's position by adding the current velocity
+void Particle::Update(float deltaTime, int screenWidth, int screenHeight) {
+    // 1. Calculate acceleration from accumulated forces (Newton's 2nd Law: a = F/m)
+    acceleration = forceAccumulator / mass;
+
+    // 2. Add gravity to the acceleration
+    acceleration.y += GRAVITY;
+
+    // 3. Update velocity using the total acceleration
+    velocity += acceleration * deltaTime;
+
+    // 4. Update the position by adding the current velocity
     position += velocity * deltaTime;
+
+    // 5. Clear forces for the next frame
+    forceAccumulator = glm::vec2(0.0f, 0.0f);
 
     // Floor Collision
     if (position.y + radius >= screenHeight) {
