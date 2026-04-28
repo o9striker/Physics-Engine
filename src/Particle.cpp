@@ -11,10 +11,16 @@ Particle::Particle(float x, float y, float m, float r, uint32_t c) {
     color = c;
 }
 
-void Particle::Update(float deltaTime) {
+void Particle::Update(float deltaTime, int screenHeight) {
     // 1. Add gravity to the velocity's Y-component
     velocity.y += GRAVITY * deltaTime;
 
     // 2. Update the particle's position by adding the current velocity
     position += velocity * deltaTime;
+
+    // Floor Collision
+    if (position.y + radius >= screenHeight) {
+        position.y = (float)screenHeight - radius;
+        velocity.y *= -0.8f; // Bounce with restitution
+    }
 }

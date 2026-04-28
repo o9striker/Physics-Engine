@@ -2,6 +2,7 @@
 #include "Particle.h"
 #include <vector>
 #include <cstdint>
+#include <iostream>
 
 // Helper function to keep physics fully decoupled from Raylib
 Color GetRaylibColor(uint32_t hexColor) {
@@ -36,21 +37,15 @@ int main() {
                                     (GetRandomValue(50, 255) << 16) | 
                                     (GetRandomValue(50, 255) << 8)  | 0xFF);
             
-            particles.push_back(Particle(mouseX, mouseY, 1.0f, GetRandomValue(10, 25), randomColor));
+            particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(10, 25), randomColor));
         }
 
         // The Tick
         float deltaTime = GetFrameTime();
 
-        // Update the Math for every particle
+        // Update every particle
         for (auto& p : particles) {
-            p.Update(deltaTime);
-
-            // Floor Collision
-            if (p.position.y + p.radius >= screenHeight) {
-                p.position.y = screenHeight - p.radius;
-                p.velocity.y *= -0.8f; // Bounce with restitution
-            }
+            p.Update(deltaTime, screenHeight);
         }
 
         // 4. Drawing
@@ -61,8 +56,12 @@ int main() {
 
         // Draw every particle
         for (const auto& p : particles) {
-            DrawCircle(p.position.x, p.position.y, p.radius, GetRaylibColor(p.color));
+            DrawCircle((int)p.position.x, (int)p.position.y, p.radius, GetRaylibColor(p.color));
         }
+
+        // Debug info on screen
+        DrawText(TextFormat("Particles: %i", (int)particles.size()), 10, 10, 20, RAYWHITE);
+        DrawText(TextFormat("FPS: %i", GetFPS()), 10, 40, 20, RAYWHITE);
 
         EndDrawing();
     }
