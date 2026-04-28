@@ -30,7 +30,7 @@ int main() {
     particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 0: Anchor
     particles[0].isStatic = true;
     particles.push_back(Particle(screenWidth / 2.0f + 100.0f, 300.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 1: Bob
-    springs.push_back({0, 1, 200.0f, 5.0f});
+    springs.push_back(Spring(0, 1, 200.0f, 5.0f, 0.5f));
 
     // 2. The Game Loop
     while (!WindowShouldClose()) { 
@@ -50,6 +50,11 @@ int main() {
 
         // The Tick
         float deltaTime = GetFrameTime();
+
+        // Update springs
+        for (auto& s : springs) {
+            s.Update(particles);
+        }
 
         // Update positions first
         for (auto& p : particles) {
