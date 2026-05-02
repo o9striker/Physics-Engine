@@ -185,4 +185,31 @@ void Particle::ResolveCollision(Particle& other) {
     glm::vec2 impulse = j * normal;
     if (!isStatic) velocity += impulse * invMass1;
     if (!other.isStatic) other.velocity -= impulse * invMass2;
+
+    // Step 4: Tangent Friction
+    // Re-calculate relative velocity after normal impulse to ensure we only apply friction to remaining tangential movement
+    glm::vec2 v_rel_post = velocity - other.velocity;
+    glm::vec2 tangent = v_rel_post - glm::dot(v_rel_post, normal) * normal;
+
+    if (glm::length(tangent) > 0.0001f) {
+        tangent = glm::normalize(tangent);
+        
+        // Calculate frictional impulse magnitude
+        float jt = -glm::dot(v_rel_post, tangent);
+        jt /= invMassSum;
+
+        float mu = 0.3f; // Friction coefficient
+        
+        // Clamp friction impulse (Coulomb's Law: Ff <= mu * Fn)
+        glm::vec2 frictionImpulse;
+        if (std::abs(jt) < j * mu) {
+            frictionImpulse = jt * tangent;
+        } else {
+            frictionImpulse = -j * mu * tangent;
+        }
+        
+        // Apply friction impulse
+        if (!isStatic) velocity += frictionImpulse * invMass1;
+        if (!other.isStatic) other.velocity -= frictionImpulse * invMass2;
+    }
 }

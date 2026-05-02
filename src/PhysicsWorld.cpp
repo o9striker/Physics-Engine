@@ -32,18 +32,24 @@ void PhysicsWorld::Update(float dt) {
             } else {
                 p.velocity.y *= -0.8f; // Bounce with restitution
             }
+            // Apply horizontal friction when rubbing against the floor
+            p.velocity.x *= 0.95f; 
         }
 
         // Left wall
         if (p.position.x - halfW <= wallLeft) {
             p.position.x = wallLeft + halfW;
             p.velocity.x *= -0.8f;
+            // Apply vertical friction when rubbing against the wall
+            p.velocity.y *= 0.95f;
         }
 
         // Right wall
         if (p.position.x + halfW >= wallRight) {
             p.position.x = wallRight - halfW;
             p.velocity.x *= -0.8f;
+            // Apply vertical friction when rubbing against the wall
+            p.velocity.y *= 0.95f;
         }
     }
 
