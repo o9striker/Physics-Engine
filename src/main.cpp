@@ -45,7 +45,19 @@ int main() {
             bool grabbed = false;
             // Check if clicking on an existing particle
             for (size_t i = 0; i < particles.size(); i++) {
-                if (glm::distance(particles[i].position, mousePos) <= particles[i].radius) {
+                bool hit = false;
+                if (particles[i].shape == CIRCLE) {
+                    if (glm::distance(particles[i].position, mousePos) <= particles[i].radius) hit = true;
+                } else if (particles[i].shape == BOX) {
+                    if (mouseX >= particles[i].position.x - particles[i].width / 2.0f &&
+                        mouseX <= particles[i].position.x + particles[i].width / 2.0f &&
+                        mouseY >= particles[i].position.y - particles[i].height / 2.0f &&
+                        mouseY <= particles[i].position.y + particles[i].height / 2.0f) {
+                        hit = true;
+                    }
+                }
+                
+                if (hit) {
                     grabbedParticleIndex = (int)i;
                     particles[i].isStatic = true;
                     particles[i].velocity = glm::vec2(0.0f, 0.0f);
@@ -60,7 +72,11 @@ int main() {
                                         (GetRandomValue(50, 255) << 16) | 
                                         (GetRandomValue(50, 255) << 8)  | 0xFF);
                 
-                particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(10, 25), randomColor));
+                if (GetRandomValue(0, 1) == 0) {
+                    particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(10, 25), randomColor));
+                } else {
+                    particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(20, 50), (float)GetRandomValue(20, 50), randomColor));
+                }
             }
         }
 
@@ -104,7 +120,11 @@ int main() {
 
         // Draw every particle
         for (const auto& p : particles) {
-            DrawCircle((int)p.position.x, (int)p.position.y, p.radius, GetRaylibColor(p.color));
+            if (p.shape == CIRCLE) {
+                DrawCircle((int)p.position.x, (int)p.position.y, p.radius, GetRaylibColor(p.color));
+            } else if (p.shape == BOX) {
+                DrawRectangle((int)(p.position.x - p.width / 2.0f), (int)(p.position.y - p.height / 2.0f), (int)p.width, (int)p.height, GetRaylibColor(p.color));
+            }
         }
 
         // Draw every spring
