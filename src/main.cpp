@@ -1,7 +1,5 @@
 #include "raylib.h"
-#include "Particle.h"
-#include "Spring.h"
-#include <vector>
+#include "PhysicsWorld.h"
 #include <cstdint>
 #include <iostream>
 
@@ -22,17 +20,20 @@ int main() {
     InitWindow(screenWidth, screenHeight, "Physics Engine - v0.1");
     SetTargetFPS(60);
 
-    // The dynamic list of particles
-    std::vector<Particle> particles;
-    std::vector<Spring> springs;
+    // The PhysicsWorld owns all particles, springs, and boundary constraints
+    PhysicsWorld world((float)screenHeight, 0.0f, (float)screenWidth);
 
     // The Anchor Setup (The Sandbox)
-    particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 0: Anchor
-    particles[0].isStatic = true;
-    particles.push_back(Particle(screenWidth / 2.0f + 100.0f, 300.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 1: Bob
-    springs.push_back(Spring(0, 1, 200.0f, 250.0f, 15.0f));
+    world.particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 0: Anchor
+    world.particles[0].isStatic = true;
+    world.particles.push_back(Particle(screenWidth / 2.0f + 100.0f, 300.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 1: Bob
+    world.springs.push_back(Spring(0, 1, 200.0f, 250.0f, 15.0f));
 
     int grabbedParticleIndex = -1;
+
+    // Time Step variables
+    float accumulator = 0.0f;
+    const float FIXED_TIME_STEP = 1.0f / 120.0f;
 
     // 2. The Game Loop
     while (!WindowShouldClose()) { 
@@ -44,23 +45,23 @@ int main() {
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             bool grabbed = false;
             // Check if clicking on an existing particle
-            for (size_t i = 0; i < particles.size(); i++) {
+            for (size_t i = 0; i < world.particles.size(); i++) {
                 bool hit = false;
-                if (particles[i].shape == CIRCLE) {
-                    if (glm::distance(particles[i].position, mousePos) <= particles[i].radius) hit = true;
-                } else if (particles[i].shape == BOX) {
-                    if (mouseX >= particles[i].position.x - particles[i].width / 2.0f &&
-                        mouseX <= particles[i].position.x + particles[i].width / 2.0f &&
-                        mouseY >= particles[i].position.y - particles[i].height / 2.0f &&
-                        mouseY <= particles[i].position.y + particles[i].height / 2.0f) {
+                if (world.particles[i].shape == CIRCLE) {
+                    if (glm::distance(world.particles[i].position, mousePos) <= world.particles[i].radius) hit = true;
+                } else if (world.particles[i].shape == BOX) {
+                    if (mouseX >= world.particles[i].position.x - world.particles[i].width / 2.0f &&
+                        mouseX <= world.particles[i].position.x + world.particles[i].width / 2.0f &&
+                        mouseY >= world.particles[i].position.y - world.particles[i].height / 2.0f &&
+                        mouseY <= world.particles[i].position.y + world.particles[i].height / 2.0f) {
                         hit = true;
                     }
                 }
                 
                 if (hit) {
                     grabbedParticleIndex = (int)i;
-                    particles[i].isStatic = true;
-                    particles[i].velocity = glm::vec2(0.0f, 0.0f);
+                    world.particles[i].isStatic = true;
+                    world.particles[i].velocity = glm::vec2(0.0f, 0.0f);
                     grabbed = true;
                     break;
                 }
@@ -73,43 +74,33 @@ int main() {
                                         (GetRandomValue(50, 255) << 8)  | 0xFF);
                 
                 if (GetRandomValue(0, 1) == 0) {
-                    particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(10, 25), randomColor));
+                    world.particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(10, 25), randomColor));
                 } else {
-                    particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(20, 50), (float)GetRandomValue(20, 50), randomColor));
+                    world.particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(20, 50), (float)GetRandomValue(20, 50), randomColor));
                 }
             }
         }
 
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && grabbedParticleIndex != -1) {
-            particles[grabbedParticleIndex].position = mousePos;
+            world.particles[grabbedParticleIndex].position = mousePos;
         }
 
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && grabbedParticleIndex != -1) {
             // Particle 0 is the anchor, so it stays static
             if (grabbedParticleIndex != 0) {
-                particles[grabbedParticleIndex].isStatic = false;
+                world.particles[grabbedParticleIndex].isStatic = false;
             }
             grabbedParticleIndex = -1;
         }
 
         // The Tick
-        float deltaTime = GetFrameTime();
+        float frameTime = GetFrameTime();
+        if (frameTime > 0.25f) frameTime = 0.25f; // Prevent spiral of death
+        accumulator += frameTime;
 
-        // Apply Spring Forces
-        for (auto& s : springs) {
-            s.Update(particles);
-        }
-
-        // Update positions
-        for (auto& p : particles) {
-            p.Update(deltaTime, screenWidth, screenHeight);
-        }
-
-        // Then check collisions
-        for (size_t i = 0; i < particles.size(); i++) {
-            for (size_t j = i + 1; j < particles.size(); j++) {
-                particles[i].ResolveCollision(particles[j]);
-            }
+        while (accumulator >= FIXED_TIME_STEP) {
+            world.Update(FIXED_TIME_STEP);
+            accumulator -= FIXED_TIME_STEP;
         }
 
         // 4. Drawing
@@ -119,7 +110,7 @@ int main() {
         ClearBackground({ 15, 15, 18, 255 }); 
 
         // Draw every particle
-        for (const auto& p : particles) {
+        for (const auto& p : world.particles) {
             if (p.shape == CIRCLE) {
                 DrawCircle((int)p.position.x, (int)p.position.y, p.radius, GetRaylibColor(p.color));
             } else if (p.shape == BOX) {
@@ -128,14 +119,14 @@ int main() {
         }
 
         // Draw every spring
-        for (const auto& spring : springs) {
-            Vector2 p1 = { particles[spring.particleA].position.x, particles[spring.particleA].position.y };
-            Vector2 p2 = { particles[spring.particleB].position.x, particles[spring.particleB].position.y };
+        for (const auto& spring : world.springs) {
+            Vector2 p1 = { world.particles[spring.particleA].position.x, world.particles[spring.particleA].position.y };
+            Vector2 p2 = { world.particles[spring.particleB].position.x, world.particles[spring.particleB].position.y };
             DrawLineEx(p1, p2, 3.0f, GREEN); // Neon green line
         }
 
         // Debug info on screen
-        DrawText(TextFormat("Particles: %i", (int)particles.size()), 10, 10, 20, RAYWHITE);
+        DrawText(TextFormat("Particles: %i", (int)world.particles.size()), 10, 10, 20, RAYWHITE);
         DrawText(TextFormat("FPS: %i", GetFPS()), 10, 40, 20, RAYWHITE);
 
         EndDrawing();
