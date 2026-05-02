@@ -19,8 +19,8 @@ public:
     // Apply an external force to this particle
     void ApplyForce(glm::vec2 force);
 
-    // The function that will move the particle and handle bounds collision
-    void Update(float deltaTime, int screenWidth, int screenHeight);
+    // Integrates forces and advances position. Boundary enforcement is handled by PhysicsWorld.
+    void Update(float deltaTime);
 
     // Resolves a physics collision with another particle
     void ResolveCollision(Particle& other);
