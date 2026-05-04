@@ -23,16 +23,21 @@ int main() {
     // The PhysicsWorld owns all particles, springs, and boundary constraints
     PhysicsWorld world((float)screenHeight, 0.0f, (float)screenWidth);
 
-    // The Pulley Setup (Atwood Machine Demo)
-    world.particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 0: Anchor
+    // The Pulley Setup (Atwood Machine Demo - custom test setup)
+    // Spawn the Anchor (mass = infinite/static) near the top middle of the screen.
+    world.particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 0.0f, 20.0f, 0x888888FF)); // Particle 0: Anchor
     world.particles[0].isStatic = true;
-    
-    world.particles.push_back(Particle(screenWidth / 2.0f - 100.0f, 300.0f, 5.0f, 25.0f, 0xEE4444FF)); // Particle 1: Heavy Weight (Red)
-    world.particles.push_back(Particle(screenWidth / 2.0f + 100.0f, 300.0f, 1.0f, 15.0f, 0x44EE44FF)); // Particle 2: Light Weight (Green)
-    
-    // Pulley: pA=1, pB=2, anchor=0, length=600, stiffness=500, damping=20
-    world.pulleys.push_back(Pulley(1, 2, 0, 600.0f, 500.0f, 20.0f));
 
+    // Spawn Particle A (mass = 10.0) sitting slightly below and to the left of the anchor.
+    world.particles.push_back(Particle(screenWidth / 2.0f - 150.0f, 250.0f, 10.0f, 15.0f, 0xFF0000FF)); // Particle 1: A
+
+    // Spawn Particle B (mass = 2.0) sitting exactly level with Particle A, but to the right.
+    world.particles.push_back(Particle(screenWidth / 2.0f + 150.0f, 250.0f, 2.0f, 15.0f, 0x0000FFFF)); // Particle 2: B
+
+    // Create a Pulley linking them, with a totalStringLength equal to exactly how far away they currently are from the anchor
+    float distA = glm::distance(world.particles[1].position, world.particles[0].position);
+    float distB = glm::distance(world.particles[2].position, world.particles[0].position);
+    world.pulleys.push_back(Pulley(1, 2, 0, distA + distB, 500.0f, 20.0f));
 
     int grabbedParticleIndex = -1;
 
@@ -136,13 +141,15 @@ int main() {
             Vector2 pB = { world.particles[pulley.particleB].position.x, world.particles[pulley.particleB].position.y };
             Vector2 pAnc = { world.particles[pulley.anchor].position.x, world.particles[pulley.anchor].position.y };
             
-            DrawLineEx(pA, pAnc, 2.0f, GRAY);
-            DrawLineEx(pB, pAnc, 2.0f, GRAY);
-            DrawCircleV(pAnc, 20.0f, DARKGRAY); // The Wheel
-            DrawCircleLines((int)pAnc.x, (int)pAnc.y, 20.0f, LIGHTGRAY);
+            // Draw a grey circle at the anchor position to represent the wheel
+            DrawCircleV(pAnc, 25.0f, GRAY);
+
+            // Draw white line from Particle A to the Anchor
+            DrawLineEx(pA, pAnc, 3.0f, WHITE);
+
+            // Draw white line from Particle B to the Anchor
+            DrawLineEx(pB, pAnc, 3.0f, WHITE);
         }
-
-
         // Debug info on screen
         DrawText(TextFormat("Particles: %i", (int)world.particles.size()), 10, 10, 20, RAYWHITE);
         DrawText(TextFormat("FPS: %i", GetFPS()), 10, 40, 20, RAYWHITE);
