@@ -6,8 +6,8 @@ PhysicsWorld::PhysicsWorld(float fY, float wL, float wR) {
     wallRight = wR;
 }
 
-void PhysicsWorld::Update(float dt) {
-    // 1. Apply Spring Forces
+void PhysicsWorld::Update(float dt, const EngineState& state) {
+    // 1a. Apply Spring Forces
     for (auto& s : springs) {
         s.Update(particles);
     }
@@ -15,6 +15,15 @@ void PhysicsWorld::Update(float dt) {
     // 1b. Apply Pulley Forces
     for (auto& p : pulleys) {
         p.Update(particles);
+    }
+
+    // 1c. Apply Gravity Force
+    if (state.enableGravity) {
+        for (auto& p : particles) {
+            if (!p.isStatic) {
+                p.ApplyForce(glm::vec2(0.0f, p.mass * state.gravityValue));
+            }
+        }
     }
 
     // 2. Integrate (advance positions via forces + gravity)
@@ -59,9 +68,11 @@ void PhysicsWorld::Update(float dt) {
     }
 
     // 4. Resolve Particle-Particle Collisions
-    for (size_t i = 0; i < particles.size(); i++) {
-        for (size_t j = i + 1; j < particles.size(); j++) {
-            particles[i].ResolveCollision(particles[j]);
+    if (state.enableCollisions) {
+        for (size_t i = 0; i < particles.size(); i++) {
+            for (size_t j = i + 1; j < particles.size(); j++) {
+                particles[i].ResolveCollision(particles[j]);
+            }
         }
     }
 }

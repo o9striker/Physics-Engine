@@ -1,4 +1,6 @@
 #include "raylib.h"
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
 #include "PhysicsWorld.h"
 #include <cstdint>
 #include <iostream>
@@ -13,48 +15,61 @@ Color GetRaylibColor(uint32_t hexColor) {
     return color;
 }
 
+void LoadScene(int sceneID, PhysicsWorld& world) {
+    world.particles.clear();
+    world.springs.clear();
+    world.pulleys.clear();
+
+    int screenWidth = 1280;
+
+    if (sceneID == 0) {
+        // Sandbox
+        world.particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Anchor
+        world.particles[0].isStatic = true;
+        world.particles.push_back(Particle(screenWidth / 2.0f + 100.0f, 300.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Bob
+        world.springs.push_back(Spring(0, 1, 200.0f, 250.0f, 15.0f));
+    } else if (sceneID == 1) {
+        // Atwood Machine
+        world.particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 0.0f, 20.0f, 0x888888FF)); // Anchor
+        world.particles[0].isStatic = true;
+        world.particles.push_back(Particle(screenWidth / 2.0f - 150.0f, 250.0f, 10.0f, 15.0f, 0xFF0000FF)); // Heavy
+        world.particles.push_back(Particle(screenWidth / 2.0f + 150.0f, 250.0f, 2.0f, 15.0f, 0x0000FFFF)); // Light
+        float distA = glm::distance(world.particles[1].position, world.particles[0].position);
+        float distB = glm::distance(world.particles[2].position, world.particles[0].position);
+        world.pulleys.push_back(Pulley(1, 2, 0, distA + distB, 500.0f, 20.0f));
+    } else if (sceneID == 2) {
+        // Block Tower
+        for (int i = 0; i < 10; i++) {
+            uint32_t randomColor = ((GetRandomValue(50, 255) << 24) | (GetRandomValue(50, 255) << 16) | (GetRandomValue(50, 255) << 8) | 0xFF);
+            world.particles.push_back(Particle(screenWidth / 2.0f + GetRandomValue(-2, 2), 600.0f - i * 42.0f, 2.0f, 40.0f, 40.0f, randomColor));
+        }
+    }
+}
+
 int main() {
-    // 1. Initialization
     const int screenWidth = 1280;
     const int screenHeight = 720;
-    InitWindow(screenWidth, screenHeight, "Physics Engine - v0.1");
+    InitWindow(screenWidth, screenHeight, "Physics Engine - v0.2");
     SetTargetFPS(60);
 
-    // The PhysicsWorld owns all particles, springs, and boundary constraints
     PhysicsWorld world((float)screenHeight, 0.0f, (float)screenWidth);
-
-    // The Pulley Setup (Atwood Machine Demo - custom test setup)
-    // Spawn the Anchor (mass = infinite/static) near the top middle of the screen.
-    world.particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 0.0f, 20.0f, 0x888888FF)); // Particle 0: Anchor
-    world.particles[0].isStatic = true;
-
-    // Spawn Particle A (mass = 10.0) sitting slightly below and to the left of the anchor.
-    world.particles.push_back(Particle(screenWidth / 2.0f - 150.0f, 250.0f, 10.0f, 15.0f, 0xFF0000FF)); // Particle 1: A
-
-    // Spawn Particle B (mass = 2.0) sitting exactly level with Particle A, but to the right.
-    world.particles.push_back(Particle(screenWidth / 2.0f + 150.0f, 250.0f, 2.0f, 15.0f, 0x0000FFFF)); // Particle 2: B
-
-    // Create a Pulley linking them, with a totalStringLength equal to exactly how far away they currently are from the anchor
-    float distA = glm::distance(world.particles[1].position, world.particles[0].position);
-    float distB = glm::distance(world.particles[2].position, world.particles[0].position);
-    world.pulleys.push_back(Pulley(1, 2, 0, distA + distB, 500.0f, 20.0f));
+    EngineState state;
+    
+    LoadScene(state.currentScene, world);
 
     int grabbedParticleIndex = -1;
-
-    // Time Step variables
     float accumulator = 0.0f;
     const float FIXED_TIME_STEP = 1.0f / 120.0f;
 
-    // 2. The Game Loop
     while (!WindowShouldClose()) { 
-        // 3. The God Hand (Input)
         float mouseX = (float)GetMouseX();
         float mouseY = (float)GetMouseY();
         glm::vec2 mousePos(mouseX, mouseY);
+        
+        Rectangle uiBounds = { 10, 10, 240, 360 }; // UI Panel Area
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !state.sceneMenuOpen && !CheckCollisionPointRec(GetMousePosition(), uiBounds)) {
             bool grabbed = false;
-            // Check if clicking on an existing particle
             for (size_t i = 0; i < world.particles.size(); i++) {
                 bool hit = false;
                 if (world.particles[i].shape == CIRCLE) {
@@ -77,16 +92,12 @@ int main() {
                 }
             }
 
-            // Spawn on Click if hitting empty space
             if (!grabbed) {
-                uint32_t randomColor = ((GetRandomValue(50, 255) << 24) | 
-                                        (GetRandomValue(50, 255) << 16) | 
-                                        (GetRandomValue(50, 255) << 8)  | 0xFF);
-                
-                if (GetRandomValue(0, 1) == 0) {
-                    world.particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(10, 25), randomColor));
+                uint32_t randomColor = ((GetRandomValue(50, 255) << 24) | (GetRandomValue(50, 255) << 16) | (GetRandomValue(50, 255) << 8)  | 0xFF);
+                if (state.spawnShape == 0) {
+                    world.particles.push_back(Particle(mouseX, mouseY, 1.0f, 15.0f, randomColor));
                 } else {
-                    world.particles.push_back(Particle(mouseX, mouseY, 1.0f, (float)GetRandomValue(20, 50), (float)GetRandomValue(20, 50), randomColor));
+                    world.particles.push_back(Particle(mouseX, mouseY, 1.0f, 30.0f, 30.0f, randomColor));
                 }
             }
         }
@@ -96,8 +107,8 @@ int main() {
         }
 
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && grabbedParticleIndex != -1) {
-            // Particle 0 is the anchor, so it stays static
-            if (grabbedParticleIndex != 0) {
+            // If it's a scene anchor, don't un-static it unless we want to
+            if (grabbedParticleIndex != 0 || state.currentScene == 2) {
                 world.particles[grabbedParticleIndex].isStatic = false;
             }
             grabbedParticleIndex = -1;
@@ -105,21 +116,18 @@ int main() {
 
         // The Tick
         float frameTime = GetFrameTime();
-        if (frameTime > 0.25f) frameTime = 0.25f; // Prevent spiral of death
+        if (frameTime > 0.25f) frameTime = 0.25f;
         accumulator += frameTime;
 
         while (accumulator >= FIXED_TIME_STEP) {
-            world.Update(FIXED_TIME_STEP);
+            world.Update(FIXED_TIME_STEP, state);
             accumulator -= FIXED_TIME_STEP;
         }
 
         // 4. Drawing
         BeginDrawing();
-        
-        // A nice dark-mode/cyberpunk background color
         ClearBackground({ 15, 15, 18, 255 }); 
 
-        // Draw every particle
         for (const auto& p : world.particles) {
             if (p.shape == CIRCLE) {
                 DrawCircle((int)p.position.x, (int)p.position.y, p.radius, GetRaylibColor(p.color));
@@ -128,36 +136,58 @@ int main() {
             }
         }
 
-        // Draw every spring
-        for (const auto& spring : world.springs) {
-            Vector2 p1 = { world.particles[spring.particleA].position.x, world.particles[spring.particleA].position.y };
-            Vector2 p2 = { world.particles[spring.particleB].position.x, world.particles[spring.particleB].position.y };
-            DrawLineEx(p1, p2, 3.0f, GREEN); // Neon green line
+        if (state.showSprings) {
+            for (const auto& spring : world.springs) {
+                Vector2 p1 = { world.particles[spring.particleA].position.x, world.particles[spring.particleA].position.y };
+                Vector2 p2 = { world.particles[spring.particleB].position.x, world.particles[spring.particleB].position.y };
+                DrawLineEx(p1, p2, 3.0f, GREEN);
+            }
+
+            for (const auto& pulley : world.pulleys) {
+                Vector2 pA = { world.particles[pulley.particleA].position.x, world.particles[pulley.particleA].position.y };
+                Vector2 pB = { world.particles[pulley.particleB].position.x, world.particles[pulley.particleB].position.y };
+                Vector2 pAnc = { world.particles[pulley.anchor].position.x, world.particles[pulley.anchor].position.y };
+                
+                DrawCircleV(pAnc, 25.0f, GRAY);
+                DrawLineEx(pA, pAnc, 3.0f, WHITE);
+                DrawLineEx(pB, pAnc, 3.0f, WHITE);
+            }
         }
 
-        // Draw every pulley
-        for (const auto& pulley : world.pulleys) {
-            Vector2 pA = { world.particles[pulley.particleA].position.x, world.particles[pulley.particleA].position.y };
-            Vector2 pB = { world.particles[pulley.particleB].position.x, world.particles[pulley.particleB].position.y };
-            Vector2 pAnc = { world.particles[pulley.anchor].position.x, world.particles[pulley.anchor].position.y };
-            
-            // Draw a grey circle at the anchor position to represent the wheel
-            DrawCircleV(pAnc, 25.0f, GRAY);
+        // --- UI PANEL ---
+        DrawRectangleRec(uiBounds, Fade(BLACK, 0.8f));
+        DrawText("ENGINE CONTROLS", 30, 20, 20, WHITE);
 
-            // Draw white line from Particle A to the Anchor
-            DrawLineEx(pA, pAnc, 3.0f, WHITE);
+        GuiCheckBox({ 30, 60, 20, 20 }, "Enable Gravity", &state.enableGravity);
+        GuiCheckBox({ 30, 100, 20, 20 }, "Enable Collisions", &state.enableCollisions);
+        GuiCheckBox({ 30, 140, 20, 20 }, "Show Strings/Springs", &state.showSprings);
 
-            // Draw white line from Particle B to the Anchor
-            DrawLineEx(pB, pAnc, 3.0f, WHITE);
+        DrawText(TextFormat("Gravity: %.1f", state.gravityValue), 30, 180, 10, LIGHTGRAY);
+        GuiSlider({ 30, 200, 120, 20 }, "0", "2000", &state.gravityValue, 0.0f, 2000.0f);
+
+        DrawText("Spawn Shape:", 30, 240, 10, LIGHTGRAY);
+        GuiToggleGroup({ 30, 260, 60, 25 }, "CIRCLE;BOX", &state.spawnShape);
+
+        if (GuiButton({ 30, 300, 180, 30 }, "CLEAR WORLD")) {
+            world.particles.clear();
+            world.springs.clear();
+            world.pulleys.clear();
         }
-        // Debug info on screen
-        DrawText(TextFormat("Particles: %i", (int)world.particles.size()), 10, 10, 20, RAYWHITE);
-        DrawText(TextFormat("FPS: %i", GetFPS()), 10, 40, 20, RAYWHITE);
+
+        // Scene Dropdown (Draw Last so it overlaps everything)
+        if (GuiDropdownBox({ 30, 340, 180, 25 }, "Sandbox;Atwood Machine;Block Tower", &state.currentScene, state.sceneMenuOpen)) {
+            state.sceneMenuOpen = !state.sceneMenuOpen;
+            if (!state.sceneMenuOpen) { // Selection made
+                LoadScene(state.currentScene, world);
+            }
+        }
+
+        DrawText(TextFormat("Particles: %i", (int)world.particles.size()), 10, screenHeight - 40, 20, RAYWHITE);
+        DrawText(TextFormat("FPS: %i", GetFPS()), 10, screenHeight - 20, 20, RAYWHITE);
 
         EndDrawing();
     }
 
-    // 5. De-Initialization
     CloseWindow(); 
     return 0;
 }

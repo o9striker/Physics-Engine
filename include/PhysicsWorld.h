@@ -4,6 +4,17 @@
 #include "Spring.h"
 #include "Pulley.h"
 
+struct EngineState {
+    bool enableGravity = true;
+    bool enableCollisions = true;
+    bool showSprings = true;
+    float gravityValue = 981.0f;
+
+    int spawnShape = 0; // 0 = Circle, 1 = Box
+    bool sceneMenuOpen = false;
+    int currentScene = 1; // Default to Atwood Machine
+};
+
 class PhysicsWorld {
 public:
     std::vector<Particle> particles;
@@ -18,6 +29,6 @@ public:
     // Constructor to set up boundaries
     PhysicsWorld(float fY, float wL, float wR);
 
-    // Run a single physics tick
-    void Update(float dt);
+    // Run a single simulation step
+    void Update(float dt, const EngineState& state);
 };

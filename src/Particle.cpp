@@ -1,8 +1,6 @@
 #include "Particle.h"
 #include <algorithm>
 
-const float GRAVITY = 981.0f; // Pixels per second squared
-
 Particle::Particle(float x, float y, float m, float r, uint32_t c) {
     shape = CIRCLE;
     position = glm::vec2(x, y);
@@ -45,16 +43,13 @@ void Particle::Update(float deltaTime) {
     // 1. Calculate acceleration from accumulated forces (Newton's 2nd Law: a = F/m)
     acceleration = forceAccumulator / mass;
 
-    // 2. Add gravity to the acceleration
-    acceleration.y += GRAVITY;
-
-    // 3. Update velocity using the total acceleration
+    // 2. Update velocity using the total acceleration
     velocity += acceleration * deltaTime;
 
-    // 4. Update the position by adding the current velocity
+    // 3. Update the position by adding the current velocity
     position += velocity * deltaTime;
 
-    // 5. Clear forces for the next frame
+    // 4. Clear forces for the next frame
     forceAccumulator = glm::vec2(0.0f, 0.0f);
 }
 
