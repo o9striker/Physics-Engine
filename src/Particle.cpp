@@ -79,35 +79,23 @@ void Particle::ResolveCollision(Particle& other) {
         }
     } else if (shape == BOX && other.shape == BOX) {
         // Box vs Box (AABB)
-        float leftA = position.x - width / 2.0f;
-        float rightA = position.x + width / 2.0f;
-        float topA = position.y - height / 2.0f;
-        float bottomA = position.y + height / 2.0f;
+        float dx = position.x - other.position.x;
+        float dy = position.y - other.position.y;
+        
+        float overlapX = (width / 2.0f + other.width / 2.0f) - std::abs(dx);
+        float overlapY = (height / 2.0f + other.height / 2.0f) - std::abs(dy);
 
-        float leftB = other.position.x - other.width / 2.0f;
-        float rightB = other.position.x + other.width / 2.0f;
-        float topB = other.position.y - other.height / 2.0f;
-        float bottomB = other.position.y + other.height / 2.0f;
-
-        if (rightA > leftB && leftA < rightB && bottomA > topB && topA < bottomB) {
+        if (overlapX > 0.0f && overlapY > 0.0f) {
             collided = true;
             
-            float penLeft = rightA - leftB;
-            float penRight = rightB - leftA;
-            float penTop = bottomA - topB;
-            float penBottom = bottomB - topA;
-
-            float minPen = std::min({penLeft, penRight, penTop, penBottom});
-            overlap = minPen;
-
-            if (minPen == penLeft) {
-                normal = glm::vec2(-1.0f, 0.0f);
-            } else if (minPen == penRight) {
-                normal = glm::vec2(1.0f, 0.0f);
-            } else if (minPen == penTop) {
-                normal = glm::vec2(0.0f, -1.0f);
-            } else if (minPen == penBottom) {
-                normal = glm::vec2(0.0f, 1.0f);
+            if (overlapX < overlapY) {
+                // Collision is strictly horizontal
+                overlap = overlapX;
+                normal = (dx > 0.0f) ? glm::vec2(1.0f, 0.0f) : glm::vec2(-1.0f, 0.0f);
+            } else {
+                // Collision is strictly vertical (they are stacked)
+                overlap = overlapY;
+                normal = (dy > 0.0f) ? glm::vec2(0.0f, 1.0f) : glm::vec2(0.0f, -1.0f);
             }
         }
     } else {
@@ -187,29 +175,14 @@ void Particle::ResolveCollision(Particle& other) {
     if (!other.isStatic) other.velocity -= impulse * invMass2;
 
     // Step 4: Tangent Friction
-    // Re-calculate relative velocity after normal impulse to ensure we only apply friction to remaining tangential movement
-    glm::vec2 v_rel_post = velocity - other.velocity;
-    glm::vec2 tangent = v_rel_post - glm::dot(v_rel_post, normal) * normal;
+    glm::vec2 tangent(-normal.y, normal.x);
+    float velAlongTangent = glm::dot(v_rel, tangent);
 
-    if (glm::length(tangent) > 0.0001f) {
-        tangent = glm::normalize(tangent);
-        
-        // Calculate frictional impulse magnitude
-        float jt = -glm::dot(v_rel_post, tangent);
-        jt /= invMassSum;
+    float friction = 0.2f;
+    float jt = -velAlongTangent * friction;
+    jt /= invMassSum;
 
-        float mu = 0.3f; // Friction coefficient
-        
-        // Clamp friction impulse (Coulomb's Law: Ff <= mu * Fn)
-        glm::vec2 frictionImpulse;
-        if (std::abs(jt) < j * mu) {
-            frictionImpulse = jt * tangent;
-        } else {
-            frictionImpulse = -j * mu * tangent;
-        }
-        
-        // Apply friction impulse
-        if (!isStatic) velocity += frictionImpulse * invMass1;
-        if (!other.isStatic) other.velocity -= frictionImpulse * invMass2;
-    }
+    glm::vec2 frictionImpulse = jt * tangent;
+    if (!isStatic) velocity += frictionImpulse * invMass1;
+    if (!other.isStatic) other.velocity -= frictionImpulse * invMass2;
 }
