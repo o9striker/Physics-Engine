@@ -1,7 +1,7 @@
 #include "raylib.h"
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
-#include "PhysicsWorld.h"
+#include "PhysicsWorld.hpp"
 #include <cstdint>
 #include <iostream>
 

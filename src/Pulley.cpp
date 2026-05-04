@@ -1,4 +1,4 @@
-#include "Pulley.h"
+#include "Pulley.hpp"
 
 Pulley::Pulley(size_t pA, size_t pB, size_t anc, float length, float k, float d) {
     particleA = pA;

@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
-#include "Particle.h"
-#include "Spring.h"
-#include "Pulley.h"
+#include "Particle.hpp"
+#include "Spring.hpp"
+#include "Pulley.hpp"
 
 struct EngineState {
     bool enableGravity = true;

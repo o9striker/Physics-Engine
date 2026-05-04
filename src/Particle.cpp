@@ -1,4 +1,4 @@
-#include "Particle.h"
+#include "Particle.hpp"
 #include <algorithm>
 
 Particle::Particle(float x, float y, float m, float r, uint32_t c) {

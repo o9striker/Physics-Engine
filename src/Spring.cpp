@@ -1,4 +1,4 @@
-#include "Spring.h"
+#include "Spring.hpp"
 
 Spring::Spring(size_t pA, size_t pB, float length, float k, float d) {
     particleA = pA;

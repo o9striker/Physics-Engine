@@ -1,0 +1,3 @@
+include/raygui.h linguist-vendored
+*.hpp linguist-language=C++
+*.cpp linguist-language=C++
