@@ -12,6 +12,11 @@ void PhysicsWorld::Update(float dt) {
         s.Update(particles);
     }
 
+    // 1b. Apply Pulley Forces
+    for (auto& p : pulleys) {
+        p.Update(particles);
+    }
+
     // 2. Integrate (advance positions via forces + gravity)
     for (auto& p : particles) {
         p.Update(dt);

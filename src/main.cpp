@@ -23,11 +23,16 @@ int main() {
     // The PhysicsWorld owns all particles, springs, and boundary constraints
     PhysicsWorld world((float)screenHeight, 0.0f, (float)screenWidth);
 
-    // The Anchor Setup (The Sandbox)
+    // The Pulley Setup (Atwood Machine Demo)
     world.particles.push_back(Particle(screenWidth / 2.0f, 100.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 0: Anchor
     world.particles[0].isStatic = true;
-    world.particles.push_back(Particle(screenWidth / 2.0f + 100.0f, 300.0f, 1.0f, 15.0f, 0xFFFFFFFF)); // Particle 1: Bob
-    world.springs.push_back(Spring(0, 1, 200.0f, 250.0f, 15.0f));
+    
+    world.particles.push_back(Particle(screenWidth / 2.0f - 100.0f, 300.0f, 5.0f, 25.0f, 0xEE4444FF)); // Particle 1: Heavy Weight (Red)
+    world.particles.push_back(Particle(screenWidth / 2.0f + 100.0f, 300.0f, 1.0f, 15.0f, 0x44EE44FF)); // Particle 2: Light Weight (Green)
+    
+    // Pulley: pA=1, pB=2, anchor=0, length=600, stiffness=500, damping=20
+    world.pulleys.push_back(Pulley(1, 2, 0, 600.0f, 500.0f, 20.0f));
+
 
     int grabbedParticleIndex = -1;
 
@@ -124,6 +129,19 @@ int main() {
             Vector2 p2 = { world.particles[spring.particleB].position.x, world.particles[spring.particleB].position.y };
             DrawLineEx(p1, p2, 3.0f, GREEN); // Neon green line
         }
+
+        // Draw every pulley
+        for (const auto& pulley : world.pulleys) {
+            Vector2 pA = { world.particles[pulley.particleA].position.x, world.particles[pulley.particleA].position.y };
+            Vector2 pB = { world.particles[pulley.particleB].position.x, world.particles[pulley.particleB].position.y };
+            Vector2 pAnc = { world.particles[pulley.anchor].position.x, world.particles[pulley.anchor].position.y };
+            
+            DrawLineEx(pA, pAnc, 2.0f, GRAY);
+            DrawLineEx(pB, pAnc, 2.0f, GRAY);
+            DrawCircleV(pAnc, 20.0f, DARKGRAY); // The Wheel
+            DrawCircleLines((int)pAnc.x, (int)pAnc.y, 20.0f, LIGHTGRAY);
+        }
+
 
         // Debug info on screen
         DrawText(TextFormat("Particles: %i", (int)world.particles.size()), 10, 10, 20, RAYWHITE);
