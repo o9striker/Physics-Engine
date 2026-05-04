@@ -1,7 +1,5 @@
 # 2D Physics Engine
 
-![Physics Engine Preview](https://raw.githubusercontent.com/o9striker/Physics-Engine/main/docs/preview.png)
-
 A custom-built, feature-rich 2D physics simulation environment developed in C++ using **Raylib** for rendering and **GLM** for vector mathematics. This engine supports complex mechanical constraints, multi-shape collision detection, and a real-time interactive UI.
 
 ## 🚀 Key Features
